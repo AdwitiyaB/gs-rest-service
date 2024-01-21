@@ -15,6 +15,7 @@
 5. [Executing Cucumber Tests](#executing-cucumber-tests)
     - [Run Cucumber Tests](#run-cucumber-tests)
 6. [Troubleshooting](#troubleshooting)
+7. [Cucumber Report Analysis](#cucumber-report-analysis)
 
 ## 1. Introduction
 
