@@ -15,38 +15,64 @@
  */
 package com.example.restservice;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import org.junit.jupiter.api.Test;
-
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
-@SpringBootTest
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import io.cucumber.spring.CucumberContextConfiguration;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureMockMvc
+@CucumberContextConfiguration
 public class GreetingControllerTests {
 
-	@Autowired
-	private MockMvc mockMvc;
+    @Value("${local.server.port}")
+    private int serverPort;
 
-	@Test
-	public void noParamGreetingShouldReturnDefaultMessage() throws Exception {
+    @Autowired
+    private MockMvc mockMvc;
 
-		this.mockMvc.perform(get("/greeting")).andDo(print()).andExpect(status().isOk())
-				.andExpect(jsonPath("$.content").value("Hello, World!"));
-	}
+    private ResultActions resultActions;
 
-	@Test
-	public void paramGreetingShouldReturnTailoredMessage() throws Exception {
+    @Given("the server is running")
+    public void theServerIsRunning() {
+        System.out.println("Server is running on port: " + serverPort);
+        String processName = java.lang.management.ManagementFactory.getRuntimeMXBean().getName();
+        String processId = processName.split("@")[0];
+        System.out.println("Server process ID: " + processId);
+    }
 
-		this.mockMvc.perform(get("/greeting").param("name", "Spring Community"))
-				.andDo(print()).andExpect(status().isOk())
-				.andExpect(jsonPath("$.content").value("Hello, Spring Community!"));
-	}
+    @When("the client sends a GET request to {string}")
+    public void theClientSendsAGETRequestTo(String url) throws Exception {
+        this.resultActions = this.mockMvc.perform(MockMvcRequestBuilders.get(url)).andDo(print());
+    }
 
+    @When("the client sends a GET request to {string} with the parameter {string} set to {string}")
+    public void theClientSendsAGETRequestToWithTheParameterSetTo(String url, String paramName, String paramValue) throws Exception {
+        this.resultActions = this.mockMvc.perform(MockMvcRequestBuilders.get(url).param(paramName, paramValue)).andDo(print());
+    }
+
+    @Then("the response status should be {int}")
+    public void theResponseStatusShouldBe(int expectedStatus) throws Exception {
+        this.resultActions.andExpect(status().is(expectedStatus));
+    }
+
+    @Then("the response content should be {string}")
+    public void theResponseContentShouldBe(String expectedContent) throws Exception {
+        String actualContent = this.resultActions.andReturn().getResponse().getContentAsString();
+        System.out.println("Actual response content: " + actualContent);
+
+        this.resultActions.andExpect(jsonPath("$.content").value(expectedContent));
+    }
 }
